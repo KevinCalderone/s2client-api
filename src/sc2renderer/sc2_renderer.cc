@@ -128,6 +128,12 @@ void Matrix8BPPPlayers(const char* bytes, int w_mat, int h_mat, int off_x, int o
     }
 }
 
+void Rect(int x, int y, int w, int h, int r, int g, int b) {
+    SDL_Rect rect = CreateRect(x, y, w, h);
+    SDL_SetRenderDrawColor(renderer_, Uint8(r), Uint8(g), Uint8(b), 255);
+    SDL_RenderFillRect(renderer_, &rect);
+}
+
 void ImageRGB(const char* bytes, int width, int height, int off_x, int off_y) {
     assert(renderer_);
     assert(window_);
@@ -154,6 +160,7 @@ void Render() {
     }
 
     SDL_RenderPresent(renderer_);
+    SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
     SDL_RenderClear(renderer_);
 }
 
