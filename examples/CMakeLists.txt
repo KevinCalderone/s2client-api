@@ -50,6 +50,11 @@ if (NOT APPLE)
     add_executable(rendered "rendered.cc")
     set_target_properties(rendered PROPERTIES FOLDER examples)
     target_link_libraries(rendered sc2api sc2utils sc2renderer)
+
+    #rendered_actions
+    add_executable(rendered_actions "rendered_actions.cc")
+    set_target_properties(rendered_actions PROPERTIES FOLDER examples)
+    target_link_libraries(rendered_actions sc2api sc2utils sc2renderer)
 endif ()
 
 #Intermediate bot
