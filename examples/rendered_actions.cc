@@ -3,109 +3,121 @@
 #include "sc2renderer/sc2_renderer.h"
 
 #include <iostream>
-#include <vector>
 
+const char* kReplayFolder = "E:/Replays/";
 const int kMapX = 800;
 const int kMapY = 600;
 const int kMiniMapX = 300;
 const int kMiniMapY = 300;
 
-const char* kReplayFolder = "E:/Replays/";
+const sc2::Point2DI kMapOrigin(kMiniMapX, 0);
+const sc2::Point2DI kMinimapOrigin(0, kMapY - kMiniMapY);
+static_assert(kMapX > kMiniMapX && kMapY > kMiniMapY, "");
 
 struct SRect {
     int x;
     int y;
     int w;
     int h;
-    int r;
-    int g;
-    int b;
 };
-SRect g_rect;
+
+static SRect MapDot(const sc2::Point2DI& coord, int size = 10) {
+    return {
+        coord.x - size + kMapOrigin.x,
+        coord.y - size + kMapOrigin.y,
+        size * 2,
+        size * 2
+    };
+}
+
+static SRect MinimapDot(const sc2::Point2DI& coord, int size = 10) {
+    return {
+        coord.x - size + kMinimapOrigin.x,
+        coord.y - size + kMinimapOrigin.y,
+        size * 2,
+        size * 2
+    };
+}
+
+static SRect MapRect(const sc2::Point2DI& start, const sc2::Point2DI& end) {
+    return {
+        start.x + kMapOrigin.x, 
+        start.y + kMapOrigin.y, 
+        end.x - start.x, 
+        end.y - start.y
+    };
+}
 
 class Replay : public sc2::ReplayObserver {
 public:
     void OnGameStart() final {
-        sc2::renderer::Initialize("Rendered", 50, 50, kMiniMapX + kMapX, std::max(kMiniMapY, kMapY));
+        sc2::renderer::Initialize("Rendered", 50, 50, kMiniMapX + kMapX, kMapY);
     }
 
-    void DrawDotMap(const sc2::Point2DI& coord) {
-        g_rect = {
-            coord.x - 10 + kMiniMapX, coord.y - 10, 20, 20, 255, 0, 0
-        };
-    }
-
-    void DrawRectMap(const sc2::Point2DI& start, const sc2::Point2DI& end) {
-        g_rect = {
-            start.x + kMiniMapX, start.y, end.x - start.x, end.y - start.y, 255, 0, 0        
-        };
-    }
-
-    void DrawDotMinimap(const sc2::Point2DI& coord) {
-        g_rect = {
-            coord.x - 10, coord.y - 10 + (kMapY - kMiniMapY), 20, 20, 255, 0, 0
-        };
-    }
-
-    void DrawActions() {
+    void ProcessActions() {
         const auto& actions = Observation()->GetRenderedActions();
         for (const auto& action : actions.unit_commands) {
             if (action.target_type == sc2::SpatialUnitCommand::TargetScreen) {
-                DrawDotMap(action.target);
+                last_action_visual = MapDot(action.target);
                 return;
             }
             else if (action.target_type == sc2::SpatialUnitCommand::TargetMinimap) {
-                DrawDotMinimap(action.target);
+                last_action_visual = MinimapDot(action.target);
                 return;
             }
         }
         for (const auto& action : actions.select_points) {
-            DrawDotMap(action.select_screen);
-            return;
-        }
-        for (const auto& action : actions.camera_moves) {
-            DrawDotMinimap(action.center_minimap);
+            last_action_visual = MapDot(action.select_screen);
             return;
         }
         for (const auto& action : actions.select_rects) {
             for (const auto& rect : action.select_screen) {
-                DrawRectMap(rect.from, rect.to);
+                last_action_visual = MapRect(rect.from, rect.to);
                 return;
             }
         }
+        for (const auto& action : actions.camera_moves) {
+            last_action_visual = MinimapDot(action.center_minimap);
+            return;
+        }
     }
 
-    void ActuallyDrawActions() {
+    void RenderGame() {
+        const SC2APIProtocol::Observation* observation = Observation()->GetRawObservation();
+        const SC2APIProtocol::ObservationRender& render = observation->render_data();
+
+        const SC2APIProtocol::ImageData& map = render.map();
+        sc2::renderer::ImageRGB(&map.data().data()[0], map.size().x(), map.size().y(), kMapOrigin.x, kMapOrigin.y);
+
+        const SC2APIProtocol::ImageData& minimap = render.minimap();
+        sc2::renderer::ImageRGB(&minimap.data().data()[0], minimap.size().x(), minimap.size().y(), kMinimapOrigin.x, kMinimapOrigin.y);
+    }
+
+    void RenderActions() {
         sc2::renderer::Rect(
-            g_rect.x,
-            g_rect.y,
-            g_rect.w,
-            g_rect.h,
-            g_rect.r,
-            g_rect.g,
-            g_rect.b
+            last_action_visual.x,
+            last_action_visual.y,
+            last_action_visual.w,
+            last_action_visual.h,
+            255,
+            0,
+            0
         );
     }
 
     void OnStep() final {
-        const SC2APIProtocol::Observation* observation = Observation()->GetRawObservation();
-        const SC2APIProtocol::ObservationRender& render = observation->render_data();
-
-        const SC2APIProtocol::ImageData& minimap = render.minimap();
-        sc2::renderer::ImageRGB(&minimap.data().data()[0], minimap.size().x(), minimap.size().y(), 0, std::max(kMiniMapY, kMapY) - kMiniMapY);
-
-        const SC2APIProtocol::ImageData& map = render.map();
-        sc2::renderer::ImageRGB(&map.data().data()[0], map.size().x(), map.size().y(), kMiniMapX, 0);
-
-        DrawActions();
-        ActuallyDrawActions();
-
+        ProcessActions();
+        RenderGame();
+        RenderActions();
         sc2::renderer::Render();
     }
 
     void OnGameEnd() final {
         sc2::renderer::Shutdown();
     }
+
+private:
+    SRect last_action_visual = {0,0,0,0};
 };
 
 int main(int argc, char* argv[]) {
