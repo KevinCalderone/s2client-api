@@ -8,7 +8,7 @@
 class FooBot : public sc2::Agent {
 public:
     uint32_t restarts_;
-
+ 
     FooBot() :
         restarts_(0) {
     }
