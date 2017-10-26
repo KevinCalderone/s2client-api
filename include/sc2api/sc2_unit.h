@@ -242,4 +242,8 @@ struct IsUnits {
     };
 };
 
+struct IsVisible {
+    bool operator()(const Unit& unit) { return unit.display_type == Unit::Visible; };
+};
+
 }
