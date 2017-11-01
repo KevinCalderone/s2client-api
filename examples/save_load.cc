@@ -1,5 +1,6 @@
 #include "sc2api/sc2_api.h"
 #include "sc2lib/sc2_lib.h"
+#include "sc2renderer/sc2_renderer.h"
 
 #include "sc2utils/sc2_manage_process.h"
 
@@ -7,10 +8,18 @@
 
 using namespace sc2;
 
+#define USE_SOFTWARE_RENDERING 0
+
+const int kMapX = 800;
+const int kMapY = 600;
+const int kMiniMapX = 300;
+const int kMiniMapY = 300;
+
 class WorkerRushBot : public Agent {
 public:
     virtual void OnGameStart() final {
-    };
+        sc2::renderer::Initialize("Rendered", 50, 50, kMiniMapX + kMapX, std::max(kMiniMapY, kMapY));
+    }
 
     void CenterCamera(std::vector<const Unit*> units) {
         if (units.size() == 0)
@@ -24,6 +33,19 @@ public:
 
         Debug()->DebugMoveCamera(center);
         Debug()->SendDebug();
+    }
+
+    void RenderGame() {
+        const SC2APIProtocol::Observation* observation = Observation()->GetRawObservation();
+        const SC2APIProtocol::ObservationRender& render = observation->render_data();
+
+        const SC2APIProtocol::ImageData& minimap = render.minimap();
+        sc2::renderer::ImageRGB(&minimap.data().data()[0], minimap.size().x(), minimap.size().y(), 0, std::max(kMiniMapY, kMapY) - kMiniMapY);
+
+        const SC2APIProtocol::ImageData& map = render.map();
+        sc2::renderer::ImageRGB(&map.data().data()[0], map.size().x(), map.size().y(), kMiniMapX, 0);
+
+        sc2::renderer::Render();
     }
 
     void Save () {
@@ -77,10 +99,14 @@ public:
         if (has_save && workers.size() == 0) {
             Load();
         }
+
+        RenderGame();
     };
 
     virtual void OnGameEnd() final {
+        sc2::renderer::Shutdown();
     };
+
 private:
     bool has_save = false;
 };
@@ -92,18 +118,28 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    sc2::RenderSettings settings(kMapX, kMapY, kMiniMapX, kMiniMapY);
+    coordinator.SetRender(settings);
+
+#if defined(__linux__)
+#if USE_SOFTWARE_RENDERING
+    coordinator.AddCommandLine("-eglpath /usr/lib/nvidia-367/libEGL.so");
+#else
+    coordinator.AddCommandLine("-osmesapath libOSMesa.so");
+#endif
+#endif
+
     WorkerRushBot bot;
     coordinator.SetParticipants({
         CreateParticipant(sc2::Race::Terran, &bot),
         CreateComputer(sc2::Race::Protoss)
     });
 
-    // Start the game.
     coordinator.LaunchStarcraft();
     coordinator.StartGame(sc2::kMapBelShirVestigeLE);
 
-    // Step forward the game simulation.
     while (coordinator.Update());
+    while (!sc2::PollKeyPress());
 
     return 0;
 }

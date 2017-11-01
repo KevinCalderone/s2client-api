@@ -54,21 +54,16 @@ int main(int argc, char* argv[]) {
 #endif
 
     RenderAgent bot;
-
     coordinator.SetParticipants({
         CreateParticipant(sc2::Race::Terran, &bot),
         CreateComputer(sc2::Race::Zerg)
     });
 
-    // Start the game.
     coordinator.LaunchStarcraft();
     coordinator.StartGame(sc2::kMapBelShirVestigeLE);
 
-    while (coordinator.Update()) {
-        if (sc2::PollKeyPress()) {
-            break;
-        }
-    }
+    while (coordinator.Update());
+    while (!sc2::PollKeyPress());
 
     return 0;
 }

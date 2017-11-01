@@ -20,9 +20,9 @@ if (NOT APPLE)
     add_executable(rendered_actions "rendered_actions.cc")
     set_target_properties(rendered_actions PROPERTIES FOLDER examples)
     target_link_libraries(rendered_actions sc2api sc2utils sc2renderer)
-endif ()
 
-#annoying_helper
-add_executable(save_load "save_load.cc")
-set_target_properties(save_load PROPERTIES FOLDER examples)
-target_link_libraries(save_load sc2api sc2lib sc2utils)
+    #save_load
+    add_executable(save_load "save_load.cc")
+    set_target_properties(save_load PROPERTIES FOLDER examples)
+    target_link_libraries(save_load sc2api sc2lib sc2utils sc2renderer)
+endif ()
