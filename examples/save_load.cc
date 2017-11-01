@@ -27,6 +27,8 @@ public:
     }
 
     void Save () {
+        // We haven't added proper support for this yet. This is a hack
+        // to manually call into the underlying protobuf interface.
         GameRequestPtr request = Control()->Proto().MakeRequest();
         request->mutable_quick_save();
         if (!Control()->Proto().SendRequest(request)) {
@@ -37,6 +39,8 @@ public:
     }
 
     void Load () {
+        // We haven't added proper support for this yet. This is a hack
+        // to manually call into the underlying protobuf interface.
         GameRequestPtr request = Control()->Proto().MakeRequest();
         request->mutable_quick_load();
         if (!Control()->Proto().SendRequest(request)) {
