@@ -78,7 +78,7 @@ public:
         // Worker rush the enemy!
         //
         auto enemy_base = obs->GetGameInfo().enemy_start_locations[0];
-        auto& workers = obs->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_SCV));
+        const auto& workers = obs->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::TERRAN_SCV));
         for (auto unit : workers) {
             Actions()->UnitCommand(unit, ABILITY_ID::ATTACK, enemy_base);
         }
@@ -87,7 +87,7 @@ public:
         // Create a savepoint as we arrive at the enemy base
         //
         if (!has_save) {
-            auto& enemies = obs->GetUnits(Unit::Alliance::Enemy, IsVisible());
+            const auto& enemies = obs->GetUnits(Unit::Alliance::Enemy, IsVisible());
             if (enemies.size() > 0) {
                 Save();
                 has_save = true;
@@ -123,9 +123,9 @@ int main(int argc, char* argv[]) {
 
 #if defined(__linux__)
 #if USE_SOFTWARE_RENDERING
-    coordinator.AddCommandLine("-eglpath /usr/lib/nvidia-367/libEGL.so");
+    coordinator.AddCommandLine("-osmesapath /usr/lib/x86_64-linux-gnu/libOSMesa.so.8");
 #else
-    coordinator.AddCommandLine("-osmesapath libOSMesa.so");
+    coordinator.AddCommandLine("-eglpath /usr/lib/nvidia-384/libEGL.so");
 #endif
 #endif
 

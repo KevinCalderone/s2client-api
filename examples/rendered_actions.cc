@@ -139,9 +139,9 @@ int main(int argc, char* argv[]) {
 
 #if defined(__linux__)
 #if USE_SOFTWARE_RENDERING
-    coordinator.AddCommandLine("-eglpath /usr/lib/nvidia-367/libEGL.so");
+    coordinator.AddCommandLine("-osmesapath /usr/lib/x86_64-linux-gnu/libOSMesa.so.8");
 #else
-    coordinator.AddCommandLine("-osmesapath libOSMesa.so");
+    coordinator.AddCommandLine("-eglpath /usr/lib/nvidia-384/libEGL.so");
 #endif
 #endif
 
